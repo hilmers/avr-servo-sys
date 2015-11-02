@@ -1,5 +1,5 @@
 #include <avr/io.h>
-#include <avr/interrupt.h>   // Needed to use interrupts
+#include <avr/interrupt.h>
 #include <stdint.h>
 #include <string.h>
 #include <stdlib.h>
@@ -8,7 +8,6 @@
 #include <avr/sleep.h>
 #include <avr/wdt.h>		// watch dog timer
 #define BAUD 2400
-//#define MYUBRR F_CPU / BAUD / 16 - 1
 #include <util/setbaud.h>
 
 /* "Automatic" control parameters: */
@@ -50,7 +49,7 @@ int main(void) {
 	max = 255;
 	min = 0;
 	old_state =	0xFF;
-	tic = 0; //???
+	tic = 0;
 	u =	0;
 	y =	0;
 	Integrator = 0;
@@ -72,11 +71,11 @@ int main(void) {
 	DDRC = 0xFF; 
 	
 	/* Serial comm */
-	//clockprescale();
 	usart_init();
 	usart_interrupt_init();
 	pwm_init();
 	watchdog_timer_init();
+
 	/* Check if reset was cause by Watchdog */
 	if (MCUSR & (1 << WDRF)) {
 		MCUSR &= ~(1 << WDRF); // Clear the WDT reset flag
@@ -101,7 +100,7 @@ void watchdog_timer_init(void)
 	/* Sets up the watchdog interrupt */
 	WDTCSR |= (1 << WDCE) | (1 << WDE);
 	
-	/* Starts the timer with 4s prescaller? */
+	/* Starts the timer with 250ms prescaller */
 	WDTCSR = (1 << WDIE) | (1 << WDP2) | (0 << WDP1) | (1 << WDP0);
 	
 	sei();
@@ -116,11 +115,11 @@ void pwm_init(void)
 
 static void usart_init(void)
 {
-	/*Set baud rate from page 178 in datasheet */
+	/* Set baud rate, from page 178 in datasheet */
+	/* Constants from util/setbaud */
 	UBRR0L = UBRRL_VALUE;
 	UBRR0H = UBRRH_VALUE;
-	//UBRR0H = (unsigned char) (ubrr >> 8);
-	//UBRR0L = (unsigned char) ubrr;
+
 	/*Enable receiver and transmitter */
 	UCSR0B = (1 << RXCIE0) | (1 << RXEN0) | (1 << TXEN0) | (1<< TXCIE0);
 	/* Set frame format: 8data, 1stop bit */
@@ -190,18 +189,12 @@ void set_pwm_output(uint8_t k)
 	OCR0B = 255 - k;
 }
 
-void clockprescale(void)
-{
-	CLKPR = 0b10000000;
-	CLKPR = 0b00000000;
-}
-
 ISR(PCINT0_vect) 
 {
 	
  	/* Rene Sommer algorithm */
  	
- 	state = PINB & ((1 << PB1) | (1 << PB2)); // ?? Set 1 and 2 to 1 and anda
+ 	state = PINB & ((1 << PB1) | (1 << PB2)); 
  	state = state >> PB1;
  	
  	switch (state) {
